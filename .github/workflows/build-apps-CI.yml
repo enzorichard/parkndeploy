@@ -1,0 +1,60 @@
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    
+  
+permissions: 
+  id-token: write # Require write permission to Fetch an OIDC token (required for federated credential) and write it, it will be automatically used on actions / cli that need it
+
+env: 
+  AZURE_RG_NAME: ${{ vars.PROJECT_NAME }}-rg-${{ vars.AZURE_RESOURCE_IDENTIFIER }}
+
+
+jobs:
+  build_and_lint_frontend:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14.21.3'
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: ./frontend
+
+    - name: Build React app
+      run: npm run build
+      working-directory: ./frontend
+
+    - name: Run linting script
+      run: npm run lint
+      working-directory: ./frontend
+
+  build_backend:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.6'
+
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ./backend
+
+    - name: Build .NET app in Release mode
+      run: dotnet publish -c Release --output ./backend/publish
+      working-directory: ./backend
